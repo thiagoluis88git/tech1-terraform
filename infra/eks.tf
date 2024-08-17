@@ -1,9 +1,10 @@
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "19.15.1"
+  version = "20.23.0"
 
   cluster_name                   = local.name
   cluster_endpoint_public_access = true
+  cluster_endpoint_private_access = false
 
   cluster_addons = {
     coredns = {
@@ -23,20 +24,20 @@ module "eks" {
 
   # EKS Managed Node Group(s)
   eks_managed_node_group_defaults = {
-    ami_type       = "AL2_x86_64"
+    ami_type       = "ami-0ae8f15ae66fe8cda"
     instance_types = ["t3.medium"]
 
     attach_cluster_primary_security_group = true
   }
 
   eks_managed_node_groups = {
-    amc-cluster-wg = {
+    fastfood-node-group = {
       min_size     = 1
       max_size     = 2
       desired_size = 1
 
       instance_types = ["t3.medium"]
-      capacity_type  = "SPOT"
+      capacity_type  = "ON_DEMAND"
 
       tags = {
         ExtraTag = "fastfood-instance"
