@@ -6,7 +6,6 @@ resource "aws_vpc" "fiap-vpc" {
 
   tags = {
     Name = "fiap-vpc"
-    "kubernetes.io/cluster/${aws_eks_cluster.fastfood-cluster.name}" = "shared"
   }
 }
 
@@ -24,7 +23,7 @@ resource "aws_internet_gateway" "fiap-vpc-igw" {
 }
 
 /* NAT Gateway */
-resource "aws_nat_gateway" "main" {
+resource "aws_nat_gateway" "fastfood-nat-gateway" {
   allocation_id = aws_eip.vpc-elastic-ip.id
   subnet_id     = aws_subnet.public-subnet-a.id
 
@@ -43,7 +42,6 @@ resource "aws_subnet" "private-subnet-a" {
 
   tags = {
     Name = "private-subnet-a"
-    "kubernetes.io/cluster/${aws_eks_cluster.fastfood-cluster.name}" = "shared"
     "kubernetes.io/role/internal-elb" = 1
   }
 }
@@ -58,7 +56,6 @@ resource "aws_subnet" "private-subnet-b" {
 
   tags = {
     Name = "private-subnet-b"
-    "kubernetes.io/cluster/${aws_eks_cluster.fastfood-cluster.name}" = "shared"
     "kubernetes.io/role/internal-elb" = 1
   }
 }
@@ -73,7 +70,6 @@ resource "aws_subnet" "public-subnet-a" {
 
   tags = {
     Name = "public-subnet-a"
-    "kubernetes.io/cluster/${aws_eks_cluster.fastfood-cluster.name}" = "shared"
     "kubernetes.io/role/elb" = 1
   }
 }
@@ -88,7 +84,6 @@ resource "aws_subnet" "public-subnet-b" {
 
   tags = {
     Name = "public-subnet-b"
-    "kubernetes.io/cluster/${aws_eks_cluster.fastfood-cluster.name}" = "shared"
     "kubernetes.io/role/elb" = 1
   }
 }
