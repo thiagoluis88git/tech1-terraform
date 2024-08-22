@@ -1,17 +1,29 @@
+
+provider "aws" {
+  profile = var.networking.profile
+  region = var.networking.region
+}
+
 /* VPC */
 resource "aws_vpc" "fiap-vpc" {
-  cidr_block = "10.123.0.0/16"
+  cidr_block = var.networking.cidr_block
   enable_dns_hostnames = true
   enable_dns_support   = true
 
   tags = {
-    Name = "fiap-vpc"
+    Name = var.networking.vpc_name
   }
 }
 
-# Create Elastic IP
-resource "aws_eip" "vpc-elastic-ip" {
-  vpc = true
+# EIPs
+resource "aws_eip" "elastic-ip" {
+  count      = var.networking.private_subnets == null || var.networking.nat_gateways == false ? 0 : length(var.networking.private_subnets)
+  vpc        = true
+  depends_on = [aws_internet_gateway.fiap-vpc-igw]
+
+  tags = {
+    Name = "eip-${count.index}"
+  }
 }
 
 /* Internet gateway for the public subnet */
@@ -22,139 +34,107 @@ resource "aws_internet_gateway" "fiap-vpc-igw" {
   }
 }
 
-/* NAT Gateway */
-resource "aws_nat_gateway" "fastfood-nat-gateway" {
-  allocation_id = aws_eip.vpc-elastic-ip.id
-  subnet_id     = aws_subnet.public-subnet-a.id
-
-  tags = {
-    Name = "NAT Gateway for Custom Kubernetes Cluster"
-  }
+# NAT GATEWAYS
+resource "aws_nat_gateway" "nats" {
+  count             = var.networking.private_subnets == null || var.networking.nat_gateways == false ? 0 : length(var.networking.private_subnets)
+  subnet_id         = aws_subnet.public-subnet[count.index].id
+  connectivity_type = "public"
+  allocation_id     = aws_eip.elastic-ip[count.index].id
+  depends_on        = [aws_internet_gateway.fiap-vpc-igw]
 }
 
-/* Private Subnet A */
-resource "aws_subnet" "private-subnet-a" {
+/* Private Subnets */
+resource "aws_subnet" "private-subnet" {
+  count             = var.networking.private_subnets == null || var.networking.private_subnets == "" ? 0 : length(var.networking.private_subnets)
   vpc_id            = aws_vpc.fiap-vpc.id
-  cidr_block        = "10.123.1.0/24"
-  availability_zone = "us-east-1a"
+  cidr_block        = var.networking.private_subnets[count.index]
+  availability_zone = var.networking.azs[count.index]
 
   map_public_ip_on_launch = false
 
   tags = {
-    Name = "private-subnet-a"
-    "kubernetes.io/role/internal-elb" = 1
+    Name = "private-subnet-${count.index}"
   }
 }
 
-/* Private Subnet B */
-resource "aws_subnet" "private-subnet-b" {
+/* Public Subnets */
+resource "aws_subnet" "public-subnet" {
+  count             = var.networking.public_subnets == null || var.networking.public_subnets == "" ? 0 : length(var.networking.public_subnets)
   vpc_id            = aws_vpc.fiap-vpc.id
-  cidr_block        = "10.123.2.0/24"
-  availability_zone = "us-east-1b" 
-
-  map_public_ip_on_launch = false
-
-  tags = {
-    Name = "private-subnet-b"
-    "kubernetes.io/role/internal-elb" = 1
-  }
-}
-
-/* Public Subnet A */
-resource "aws_subnet" "public-subnet-a" {
-  vpc_id            = aws_vpc.fiap-vpc.id
-  cidr_block        = "10.123.3.0/24"
-  availability_zone = "us-east-1a"
+  cidr_block        = var.networking.public_subnets[count.index]
+  availability_zone = var.networking.azs[count.index]
 
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "public-subnet-a"
-    "kubernetes.io/role/elb" = 1
+    Name = "public-subnet-${count.index}"
   }
 }
 
-/* Public Subnet B */
-resource "aws_subnet" "public-subnet-b" {
-  vpc_id            = aws_vpc.fiap-vpc.id
-  cidr_block        = "10.123.4.0/24"
-  availability_zone = "us-east-1b" 
-
-  map_public_ip_on_launch = true
-
-  tags = {
-    Name = "public-subnet-b"
-    "kubernetes.io/role/elb" = 1
-  }
+# PUBLIC ROUTE TABLE
+resource "aws_route_table" "public-table" {
+  vpc_id = aws_vpc.fiap-vpc.id
 }
 
-/* Routing table for private subnet */
-resource "aws_route_table" "private-rt" {
-  vpc_id = "${aws_vpc.fiap-vpc.id}"
-  tags = {
-    Name        = "vpc-private-route-table"
-  }
-}
-
-/* Routing table for public subnet */
-resource "aws_route_table" "public-rt" {
-  vpc_id = "${aws_vpc.fiap-vpc.id}"
-  tags = {
-    Name        = "vpc-public-route-table"
-  }
-}
-
-resource "aws_route" "public_internet_gateway" {
-  route_table_id         = "${aws_route_table.public-rt.id}"
+resource "aws_route" "public-routes" {
+  route_table_id         = aws_route_table.public-table.id
   destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = "${aws_internet_gateway.fiap-vpc-igw.id}"
+  gateway_id             = aws_internet_gateway.fiap-vpc-igw.id
 }
 
-/* Route table associations */
-resource "aws_route_table_association" "public-1a" {
-  # count          = "${length(var.public_subnets_cidr)}"
-  subnet_id      = "${aws_subnet.public-subnet-a.id}"
-  route_table_id = "${aws_route_table.public-rt.id}"
+resource "aws_route_table_association" "assoc-public-routes" {
+  count          = length(var.networking.public_subnets)
+  subnet_id      = aws_subnet.public-subnet[count.index].id
+  route_table_id = aws_route_table.public-table.id
 }
 
-resource "aws_route_table_association" "public-1b" {
-  # count          = "${length(var.public_subnets_cidr)}"
-  subnet_id      = "${aws_subnet.public-subnet-b.id}"
-  route_table_id = "${aws_route_table.public-rt.id}"
+# PRIVATE ROUTE TABLES
+resource "aws_route_table" "private-tables" {
+  count  = length(var.networking.azs)
+  vpc_id = aws_vpc.fiap-vpc.id
 }
 
-resource "aws_route_table_association" "private-1a" {
-  # count          = "${length(var.private_subnets_cidr)}"
-  subnet_id      = "${aws_subnet.private-subnet-a.id}"
-  route_table_id = "${aws_route_table.private-rt.id}"
+resource "aws_route" "private_routes" {
+  count                  = length(var.networking.private_subnets)
+  route_table_id         = aws_route_table.private-tables[count.index].id
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id         = aws_nat_gateway.nats[count.index].id
 }
 
-resource "aws_route_table_association" "private-1b" {
-  # count          = "${length(var.private_subnets_cidr)}"
-  subnet_id      = "${aws_subnet.private-subnet-b.id}"
-  route_table_id = "${aws_route_table.private-rt.id}"
+resource "aws_route_table_association" "assoc-private-routes" {
+  count          = length(var.networking.private_subnets)
+  subnet_id      = aws_subnet.private-subnet[count.index].id
+  route_table_id = aws_route_table.private-tables[count.index].id
 }
 
-/*==== VPC's Default Security Group ======*/
-resource "aws_security_group" "default" {
-  name        = "vpc-default-sg"
-  description = "Default security group to allow inbound/outbound from the VPC"
-  vpc_id      = "${aws_vpc.fiap-vpc.id}"
-  depends_on  = [aws_vpc.fiap-vpc]
-  ingress {
-    from_port = "0"
-    to_port   = "0"
-    protocol  = "-1"
-    self      = true
+# SECURITY GROUPS
+resource "aws_security_group" "fiap-sec-groups" {
+  for_each    = { for sec in var.security_groups : sec.name => sec }
+  name        = each.value.name
+  description = each.value.description
+  vpc_id      = aws_vpc.fiap-vpc.id
+
+  dynamic "ingress" {
+    for_each = try(each.value.ingress, [])
+    content {
+      description      = ingress.value.description
+      from_port        = ingress.value.from_port
+      to_port          = ingress.value.to_port
+      protocol         = ingress.value.protocol
+      cidr_blocks      = ingress.value.cidr_blocks
+      ipv6_cidr_blocks = ingress.value.ipv6_cidr_blocks
+    }
   }
-  
-  egress {
-    from_port = "0"
-    to_port   = "0"
-    protocol  = "-1"
-    self      = "true"
-  }
-  tags = {
-    Environment = "Default security group"
+
+  dynamic "egress" {
+    for_each = try(each.value.egress, [])
+    content {
+      description      = egress.value.description
+      from_port        = egress.value.from_port
+      to_port          = egress.value.to_port
+      protocol         = egress.value.protocol
+      cidr_blocks      = egress.value.cidr_blocks
+      ipv6_cidr_blocks = egress.value.ipv6_cidr_blocks
+    }
   }
 }
