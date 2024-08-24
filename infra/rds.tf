@@ -24,7 +24,7 @@ resource "aws_db_instance" "fastfood-database" {
   engine                 = var.rds_config.engine
   engine_version         = var.rds_config.engine_version
   username               = var.rds_config.username
-  password               = var.db_password
+  password               = "fastfood_secret_pass"
   port                   = var.rds_config.port
   db_subnet_group_name   = aws_db_subnet_group.rds-subnet-group.name
   vpc_security_group_ids = [aws_security_group.rds-security-group.id]
@@ -43,6 +43,7 @@ resource "aws_security_group" "rds-security-group" {
     to_port         = var.rds_config.port
     protocol        = "tcp"
     cidr_blocks     = var.networking.private_subnets  
+    security_groups = ["${aws_security_group.ec2-rds-security-group.id}"]
   }
 
   egress {
@@ -57,6 +58,30 @@ resource "aws_security_group" "rds-security-group" {
   }
 }
 
+resource "aws_security_group" "ec2-rds-security-group" {
+  name        = "ec2-rds-security-group"
+  description = "Allow EC2 to access RDS database"
+  vpc_id      = aws_vpc.fiap-vpc.id
+
+  ingress {
+    from_port       = 22
+    to_port         = 22
+    protocol        = "tcp"
+    cidr_blocks     = ["0.0.0.0/0"]  
+  }
+
+  egress {
+    from_port       = 0
+    to_port         = 0
+    protocol        = "-1"
+    cidr_blocks     = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name            = "ec2-rds-security-group"
+  }
+}
+
 ###########################
 ########### EC2 ###########
 ###########################
@@ -68,15 +93,15 @@ resource "aws_iam_instance_profile" "instance-profile" {
 }
 
 resource "aws_instance" "rds-instance" {
-  ami = "ami-03a4942b8fcc1f29d" # <https://cloud-images.ubuntu.com/locator/ec2/> 
+  ami                         = "ami-066784287e358dad1" # <https://cloud-images.ubuntu.com/locator/ec2/> 
   instance_type               = "t2.micro"
-  subnet_id                   = aws_subnet.private-subnet[0].id
-  associate_public_ip_address = true
+  subnet_id                   = aws_subnet.public-subnet[0].id
+  associate_public_ip_address = true # must be public
   key_name                    = "vockey" # name from FIAP
   iam_instance_profile        = aws_iam_instance_profile.instance-profile.name
 
   vpc_security_group_ids = [
-    aws_security_group.rds-security-group.id
+    aws_security_group.ec2-rds-security-group.id
   ]
   root_block_device {
     delete_on_termination = true
@@ -84,18 +109,12 @@ resource "aws_instance" "rds-instance" {
     volume_size = 50
     volume_type = "gp2"
   }
+
+  depends_on = [aws_security_group.ec2-rds-security-group]
+
+  user_data = base64encode(templatefile("user_data.sh", {}))
+
   tags = {
-    Name = "instance-profile"
-    OS   = "ubuntu"
+    Name = "rds-instance"
   }
-
-  depends_on = [aws_security_group.rds-security-group]
-
-#   user_data = base64encode(templatefile("user_data.sh", {
-#     DB_USER = aws_db_instance.mysql_8.username
-#     DB_PASSWORD_PARAM = data.aws_ssm_parameter.db_password.name
-#     DB_HOST = aws_db_instance.mysql_8.address
-#     DB_PORT = aws_security_group_rule.allow_mysql_in.from_port
-#     DB_NAME = aws_db_instance.mysql_8.db_name
-#   }))
 }
