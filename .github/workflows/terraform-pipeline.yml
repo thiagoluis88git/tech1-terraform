@@ -25,10 +25,16 @@ jobs:
           aws-region: us-east-1
 
       - name: Terraform Init
-        run: terraform init
+        run: |
+            cd infra
+            terraform init
 
       - name: Terraform Plan
-        run: terraform plan
+        run: |
+            cd infra
+            terraform plan
 
       - name: Terraform Apply
-        run: terraform apply --auto-approve
+        run: |
+            cd infra
+            terraform apply --auto-approve
