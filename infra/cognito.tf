@@ -3,11 +3,23 @@ resource "aws_cognito_user_pool" "fastfood-user-pool" {
   name = "fastfood-user-pool"
 
   mfa_configuration = "OFF"
-  username_attributes = ["email"]
   auto_verified_attributes = ["email"]
   
   email_configuration {
     email_sending_account = "COGNITO_DEFAULT"
+  }
+
+  password_policy {
+    minimum_length = 8
+    require_lowercase = false
+    require_numbers = false
+    require_symbols = false
+    require_uppercase = false
+    temporary_password_validity_days = 0
+  }
+
+  admin_create_user_config {
+    allow_admin_create_user_only = true
   }
 
   schema {
