@@ -1,6 +1,6 @@
 
 provider "aws" {
-  profile = var.networking.profile
+  # profile = var.networking.profile
   region = var.networking.region
 }
 
