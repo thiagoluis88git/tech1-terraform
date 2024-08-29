@@ -29,10 +29,7 @@ jobs:
       - name: Terraform Init
         run: |
             cd infra
-            terraform init \
-              -backend-config="bucket=ratl-fiaptech1-2024-terraform-state" \
-              -backend-config="key=fiap/tech-challenge" \
-              -backend-config="region=us-east-1"
+            terraform init
 
       - name: Terraform Plan
         run: |
