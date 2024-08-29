@@ -92,7 +92,7 @@ resource "aws_instance" "rds-instance" {
   subnet_id                   = aws_subnet.public-subnet[0].id
   associate_public_ip_address = true # must be public
   key_name                    = "vockey" # name from FIAP
-  iam_instance_profile        = "LabInstanceProfile"
+  iam_instance_profile        = "LabInstanceProfile" # name from FIAP
 
   vpc_security_group_ids = [
     aws_security_group.ec2-rds-security-group.id
