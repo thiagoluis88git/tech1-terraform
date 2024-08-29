@@ -86,19 +86,13 @@ resource "aws_security_group" "ec2-rds-security-group" {
 ########### EC2 ###########
 ###########################
 
-# Create an IAM instance profile for the EC2 instance
-resource "aws_iam_instance_profile" "instance-profile" {
-  name = "ec2-instance-profile"
-  role = "LabRole"
-}
-
 resource "aws_instance" "rds-instance" {
   ami                         = "ami-066784287e358dad1" # <https://cloud-images.ubuntu.com/locator/ec2/> 
   instance_type               = "t2.micro"
   subnet_id                   = aws_subnet.public-subnet[0].id
   associate_public_ip_address = true # must be public
   key_name                    = "vockey" # name from FIAP
-  iam_instance_profile        = aws_iam_instance_profile.instance-profile.name
+  iam_instance_profile        = "LabInstanceProfile"
 
   vpc_security_group_ids = [
     aws_security_group.ec2-rds-security-group.id
