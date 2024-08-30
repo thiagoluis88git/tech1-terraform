@@ -24,7 +24,7 @@ resource "aws_db_instance" "fastfood-database" {
   engine                 = var.rds_config.engine
   engine_version         = var.rds_config.engine_version
   username               = var.rds_config.username
-  password               = "fastfood_secret_pass"
+  password               = var.db_password // env variable TF_VAR_db_password
   port                   = var.rds_config.port
   db_subnet_group_name   = aws_db_subnet_group.rds-subnet-group.name
   vpc_security_group_ids = [aws_security_group.rds-security-group.id]
