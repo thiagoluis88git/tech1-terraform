@@ -142,3 +142,11 @@ resource "aws_security_group" "fiap-sec-groups" {
     }
   }
 }
+
+output "vpc-id" {
+  value = aws_vpc.fiap-vpc.id
+}
+
+output "private-subnets-ids" {
+  value = flatten(aws_subnet.private-subnet[*].id)
+}
