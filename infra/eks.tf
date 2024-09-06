@@ -7,7 +7,7 @@ resource "aws_eks_cluster" "fastfood-cluster" {
 
   vpc_config {
     subnet_ids         = flatten([aws_subnet.public-subnet[*].id, aws_subnet.private-subnet[*].id])
-    security_group_ids = flatten([for sec in var.security_groups : aws_security_group.fiap-sec-groups[sec.name].id])
+    # security_group_ids = flatten([for sec in var.security_groups : aws_security_group.fiap-sec-groups[sec.name].id])
     
     endpoint_private_access = true
     endpoint_public_access = true
