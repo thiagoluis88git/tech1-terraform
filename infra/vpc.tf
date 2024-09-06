@@ -53,8 +53,8 @@ resource "aws_subnet" "private-subnet" {
   map_public_ip_on_launch = false
 
   tags = {
-    "Name"                                      = "private-subnet-${count.index}"
-    "kubernetes.io/role/internal-elb"                    = "1"
+    # "Name"                                      = "private-subnet-${count.index}"
+    "kubernetes.io/role/internal-elb"                    = 1
     "kubernetes.io/cluster/${var.cluster_config.name}" = "owned"
   }
 }
@@ -69,8 +69,8 @@ resource "aws_subnet" "public-subnet" {
   map_public_ip_on_launch = true
 
   tags = {
-    "Name"                                      = "public-subnet-${count.index}"
-    "kubernetes.io/role/elb"                    = "1"
+    # "Name"                                      = "public-subnet-${count.index}"
+    "kubernetes.io/role/elb"                    = 1
     "kubernetes.io/cluster/${var.cluster_config.name}" = "owned"
   }
 }
