@@ -36,7 +36,7 @@ resource "aws_internet_gateway" "fiap-vpc-igw" {
 
 # NAT GATEWAYS
 resource "aws_nat_gateway" "nats" {
-  count             = var.networking.private_subnets == null || var.networking.nat_gateways == false ? 0 : length(var.networking.private_subnets)
+  count             = var.networking.public_subnets == null || var.networking.public_subnets == false ? 0 : length(var.networking.public_subnets)
   subnet_id         = aws_subnet.public-subnet[count.index].id
   connectivity_type = "public"
   allocation_id     = aws_eip.elastic-ip[count.index].id
@@ -53,9 +53,9 @@ resource "aws_subnet" "private-subnet" {
   map_public_ip_on_launch = false
 
   tags = {
-    # "Name"                                      = "private-subnet-${count.index}"
-    "kubernetes.io/role/internal-elb"                    = 1
-    "kubernetes.io/cluster/${var.cluster_config.name}" = "owned"
+    "Name"                                               = "private-subnet-${count.index}"
+    "kubernetes.io/role/internal-elb"                    = "1"
+    "kubernetes.io/cluster/${var.cluster_config.name}"   = "shared"
   }
 }
 
@@ -69,9 +69,9 @@ resource "aws_subnet" "public-subnet" {
   map_public_ip_on_launch = true
 
   tags = {
-    # "Name"                                      = "public-subnet-${count.index}"
-    "kubernetes.io/role/elb"                    = 1
-    "kubernetes.io/cluster/${var.cluster_config.name}" = "owned"
+    "Name"                                             = "public-subnet-${count.index}"
+    "kubernetes.io/role/elb"                           = "1"
+    "kubernetes.io/cluster/${var.cluster_config.name}" = "shared"
   }
 }
 
