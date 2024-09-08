@@ -70,18 +70,18 @@ resource "aws_subnet" "public-subnet" {
 
   tags = {
     "Name"                                             = "public-subnet-${count.index}"
-    "kubernetes.io/role/elb"                           = "1"
-    "kubernetes.io/cluster/${var.cluster_config.name}" = "shared"
   }
 }
 
 # PUBLIC ROUTE TABLE
 resource "aws_route_table" "public-table" {
+  count  = length(var.networking.azs)
   vpc_id = aws_vpc.fiap-vpc.id
 }
 
 resource "aws_route" "public-routes" {
-  route_table_id         = aws_route_table.public-table.id
+  count                  = length(var.networking.public_subnets) 
+  route_table_id         = aws_route_table.public-table[count.index].id
   destination_cidr_block = "0.0.0.0/0"
   gateway_id             = aws_internet_gateway.fiap-vpc-igw.id
 }
@@ -89,7 +89,7 @@ resource "aws_route" "public-routes" {
 resource "aws_route_table_association" "assoc-public-routes" {
   count          = length(var.networking.public_subnets)
   subnet_id      = aws_subnet.public-subnet[count.index].id
-  route_table_id = aws_route_table.public-table.id
+  route_table_id = aws_route_table.public-table[count.index].id
 }
 
 # PRIVATE ROUTE TABLES
