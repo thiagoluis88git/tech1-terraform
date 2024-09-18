@@ -48,29 +48,32 @@ resource "aws_cognito_user_pool_client" "fastfood-client" {
     "ALLOW_USER_PASSWORD_AUTH",
     "ALLOW_ADMIN_USER_PASSWORD_AUTH"
   ]
-  
-  allowed_oauth_flows_user_pool_client = true
-  allowed_oauth_scopes = [ "fastfood_customer" ]
-}
-
-resource "aws_cognito_user_pool_client" "fastfood-client-admin" {
-  name = "fastfood-client-admin"
-
-  user_pool_id = aws_cognito_user_pool.fastfood-user-pool.id
-  generate_secret = false
-  refresh_token_validity = 90
-  prevent_user_existence_errors = "ENABLED"
-  explicit_auth_flows = [
-    "ALLOW_REFRESH_TOKEN_AUTH",
-    "ALLOW_USER_PASSWORD_AUTH",
-    "ALLOW_ADMIN_USER_PASSWORD_AUTH"
-  ]
-  
-  allowed_oauth_flows_user_pool_client = true
-  allowed_oauth_scopes = [ "fastfood_admin" ]
 }
 
 resource "aws_cognito_user_pool_domain" "fastfood-domain" {
   domain          = "fastfood-domain-ratl"
   user_pool_id    = aws_cognito_user_pool.fastfood-user-pool.id
+}
+
+resource "aws_cognito_user" "unknown-user" {
+  user_pool_id = aws_cognito_user_pool.fastfood-user-pool.id
+  username     = "unknown-user"
+  password = "unknown-user"
+  enabled = true
+}
+
+resource "aws_cognito_user_group" "group-users" {
+  user_pool_id = aws_cognito_user_pool.fastfood-user-pool.id
+  name         = "group-users"
+}
+
+resource "aws_cognito_user_group" "group-admin" {
+  user_pool_id = aws_cognito_user_pool.fastfood-user-pool.id
+  name         = "group-admin"
+}
+
+resource "aws_cognito_user_in_group" "usergroup-users" {
+  user_pool_id = aws_cognito_user_pool.fastfood-user-pool.id
+  group_name   = aws_cognito_user_group.group-users.name
+  username     = aws_cognito_user.unknown-user.username
 }
