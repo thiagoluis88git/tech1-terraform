@@ -60,6 +60,11 @@ resource "aws_cognito_user" "unknown-user" {
   username     = "unknown-user"
   password = "unknown-user"
   enabled = true
+  attributes = {
+    name           = "unknown-user"
+    email          = "unknown-user@fastfood.com"
+    email_verified = true
+  }
 }
 
 resource "aws_cognito_user_group" "group-users" {
