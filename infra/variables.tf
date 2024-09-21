@@ -89,33 +89,6 @@ variable "cluster_config" {
   }
 }
 
-variable "rds_config" {
-    type = object({
-      name              = string
-      instance_class    = string
-      allocated_storage = number
-      port              = number
-      username          = string
-      engine            = string
-      engine_version    = string
-    })
-    default = {
-      name              = "fastfood-database"
-      instance_class    = "db.t3.micro"
-      allocated_storage = 5
-      port              = 5432
-      username          = "fastfood_db_user"
-      engine            = "postgres"
-      engine_version    = "14.13"
-    }
-}
-
-variable "db_password" {
-  description = "RDS root user password"
-  type        = string
-  sensitive   = true
-}
-
 variable "node_groups" {
   type = list(object({
     name           = string
