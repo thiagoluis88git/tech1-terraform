@@ -150,3 +150,7 @@ output "vpc-id" {
 output "private-subnets-ids" {
   value = flatten(aws_subnet.private-subnet[*].id)
 }
+
+output "public-subnets-ids" {
+  value = flatten(aws_subnet.public-subnet[*].id)
+}
