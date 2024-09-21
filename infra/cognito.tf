@@ -58,7 +58,7 @@ resource "aws_cognito_user_pool_domain" "fastfood-domain" {
 resource "aws_cognito_user" "unknown-user" {
   user_pool_id = aws_cognito_user_pool.fastfood-user-pool.id
   username     = "unknown-user"
-  password = "unknown-user"
+  password     = "unknown-user"
   enabled = true
   attributes = {
     name           = "unknown-user"
