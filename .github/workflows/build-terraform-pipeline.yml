@@ -6,8 +6,6 @@ on:
 jobs:
   build-terraform:
     runs-on: ubuntu-latest
-    env:
-      TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
 
     steps:
       - name: Checkout Repository
