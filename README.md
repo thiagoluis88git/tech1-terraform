@@ -10,7 +10,7 @@
 
 ## Description
 
-The Tech Challenge 1 aims to do a solution for a Fast Food restaurant. This project is part of the entire solution. Here we have all the `Terraform` files to the **core infrastructure** to the `AWS` cloud.
+The Tech Challenge 1 aims to do a solution for a Fast Food restaurant. This project is part of the entire solution. Here we have all the `Terraform` files create the **Core infrastructure** to the `AWS` cloud.
 
 ## How to use
 
