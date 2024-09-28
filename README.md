@@ -1,4 +1,4 @@
-# Tech1 - Terraform repository files
+# Tech1 - Terraform repository files - Core Infrastructure
 
 ## Table of Contents
 
